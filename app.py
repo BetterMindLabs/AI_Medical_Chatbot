@@ -11,7 +11,7 @@ if not api_key:
     st.error("API Key not found. Please check your .streamlit/secrets.toml file.")
     st.stop()
 
-# Configure Gemini 2.0 Flash model with the API key
+# Configure the genai client with the API key
 genai.configure(api_key=api_key)
 
 # Streamlit UI Configuration
@@ -115,13 +115,13 @@ elif menu_selection == "💬 Chatbot":
             with st.spinner("AI is thinking..."):
                 try:
                     # Generate a response from Gemini 2.0 Flash
-                    model = genai.GenerativeModel("gemini-2.0-flash")  # Correct model for Gemini 2.0 Flash
-                    result = model.generate_content(prompt=user_text.strip())  # Pass the user input properly
+                    client = genai.Client(api_key=api_key)  # Initialize client with API key
+                    response = client.models.generate_content(  # Correct method for Gemini 2.0 Flash
+                        model="gemini-2.0-flash",  # Specify model name
+                        contents=user_text.strip()  # Pass the user message as the content
+                    )
 
-                    if hasattr(result, "text") and result.text.strip():
-                        ai_response = result.text.strip()  # Ensure text is properly extracted
-                    else:
-                        ai_response = "I'm sorry, I couldn't generate a response. Please try again."
+                    ai_response = response.text if response and hasattr(response, "text") else "I'm sorry, I couldn't generate a response. Please try again."
                 except Exception as e:
                     ai_response = f"Error occurred: {str(e)}"
 
