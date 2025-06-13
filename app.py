@@ -24,20 +24,20 @@ menu_selection = st.sidebar.radio("Go to", ["🏠 Home", "💬 Chatbot", "📜 H
 # New Chat Button
 st.sidebar.markdown("---")
 if st.sidebar.button("➕ New Chat"):
-    st.session_state.current_chat_id = None  # Reset active chat
+    st.session_state.current_chat_id = None
     st.rerun()
 
 # Initialize Chat History
 if "chat_histories" not in st.session_state:
-    st.session_state.chat_histories = {}  # Stores multiple chats
+    st.session_state.chat_histories = {}
 if "current_chat_id" not in st.session_state:
-    st.session_state.current_chat_id = None  # Tracks the active chat
+    st.session_state.current_chat_id = None
 
 # Function to generate a unique chat ID
 def generate_chat_id():
-    return str(int(time.time()))  # Timestamp-based unique ID
+    return str(int(time.time()))
 
-# Define some pre-configured medical advice responses
+# Predefined responses
 medical_responses = {
     "first aid": "First aid includes basic medical help provided to a person before professional help arrives. For example, if someone is bleeding, applying pressure on the wound can help stop the bleeding. Always call emergency services if the situation is severe.",
     "fever": "A fever is a body temperature higher than 100.4°F (38°C). It's usually caused by infections like the flu, cold, or even COVID-19. Rest, hydration, and fever-reducing medication like acetaminophen can help manage symptoms.",
@@ -66,7 +66,6 @@ elif menu_selection == "💬 Chatbot":
     st.title("🩺 AI Medical Chatbot")
     st.write("Ask me anything about health, medicine, or biology.")
 
-    # Start a new chat if none is active
     if not st.session_state.current_chat_id:
         new_chat_id = generate_chat_id()
         st.session_state.current_chat_id = new_chat_id
@@ -77,29 +76,24 @@ elif menu_selection == "💬 Chatbot":
             ]
         }
 
-    # Load the active chat
     chat_id = st.session_state.current_chat_id
     chat_data = st.session_state.chat_histories[chat_id]
     chat_messages = chat_data["messages"]
 
-    # Display chat history
     for msg in chat_messages:
         if isinstance(msg, dict) and "role" in msg:
             message(msg["content"], is_user=(msg["role"] == "user"))
 
-    # User input
-    user_text = st.chat_input("Type your message here...")  # Auto clears after submission
+    user_text = st.chat_input("Type your message here...")
 
     if user_text:
         chat_messages.append({"role": "user", "content": user_text.strip()})
-        message(user_text, is_user=True)  # Show user message instantly
+        message(user_text, is_user=True)
 
-        # Auto-name chat based on first user message
         if chat_data["title"] == "Unnamed Chat" and len(chat_messages) == 2:
             chat_data["title"] = user_text[:30] + "..." if len(user_text) > 30 else user_text
             st.session_state.chat_histories[chat_id] = chat_data
 
-        # Check if the message matches common medical questions
         user_text_lower = user_text.lower()
         response = None
 
@@ -111,21 +105,15 @@ elif menu_selection == "💬 Chatbot":
         if response:
             ai_response = response
         else:
-            # AI is typing...
             with st.spinner("AI is thinking..."):
                 try:
-                    # Generate a response from Gemini 2.0 Flash
-                    client = genai.Client(api_key=api_key)  # Initialize client with API key
-                    response = client.models.generate_content(  # Correct method for Gemini 2.0 Flash
-                        model="gemini-2.0-flash",  # Specify model name
-                        contents=user_text.strip()  # Pass the user message as the content
-                    )
-
-                    ai_response = response.text if response and hasattr(response, "text") else "I'm sorry, I couldn't generate a response. Please try again."
+                    model = genai.GenerativeModel("gemini-1.5-flash")
+                    chat = model.start_chat()
+                    response = chat.send_message(user_text.strip())
+                    ai_response = response.text if hasattr(response, "text") else "I'm sorry, I couldn't generate a response."
                 except Exception as e:
                     ai_response = f"Error occurred: {str(e)}"
 
-        # Store AI response
         chat_messages.append({"role": "assistant", "content": ai_response})
         message(ai_response, is_user=False)
 
@@ -147,7 +135,7 @@ elif menu_selection == "📜 History":
                     st.rerun()
 
             with col2:
-                with st.expander("⋮"):  # Three-dot menu
+                with st.expander("⋮"):
                     new_title = st.text_input("Rename Chat", value=chat_title, key=f"rename_{chat_id}")
                     col_btn1, col_btn2 = st.columns([0.5, 0.5])
                     with col_btn1:
