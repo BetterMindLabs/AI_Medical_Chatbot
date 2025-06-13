@@ -5,7 +5,7 @@ import time
 from streamlit_chat import message
 
 # Load API Key from Streamlit secrets
-api_key = st.secrets["general"]["google_api_key"]
+api_key = st.secrets["api_keys"]["google_api_key"]
 
 if not api_key:
     st.error("API Key not found. Please check your .streamlit/secrets.toml file.")
@@ -35,6 +35,15 @@ if "current_chat_id" not in st.session_state:
 # Function to generate a unique chat ID
 def generate_chat_id():
     return str(int(time.time()))  # Timestamp-based unique ID
+
+# Define some pre-configured medical advice responses
+medical_responses = {
+    "first aid": "First aid includes basic medical help provided to a person before professional help arrives. For example, if someone is bleeding, applying pressure on the wound can help stop the bleeding. Always call emergency services if the situation is severe.",
+    "fever": "A fever is a body temperature higher than 100.4°F (38°C). It's usually caused by infections like the flu, cold, or even COVID-19. Rest, hydration, and fever-reducing medication like acetaminophen can help manage symptoms.",
+    "headache": "Headaches can be caused by many factors like dehydration, stress, lack of sleep, or other medical conditions. Over-the-counter medications like ibuprofen or aspirin can help relieve mild headaches. Seek medical help if headaches are severe or persistent.",
+    "chest pain": "Chest pain could be a sign of something serious like a heart attack. It's important to seek immediate medical help if you experience chest pain, especially if it's accompanied by shortness of breath, dizziness, or pain radiating to the arm or jaw.",
+    "covid symptoms": "COVID-19 symptoms can include fever, cough, shortness of breath, fatigue, and loss of taste or smell. If you suspect you have COVID-19, get tested and follow local health guidelines.",
+}
 
 # ✅ Home Section
 if menu_selection == "🏠 Home":
@@ -89,14 +98,26 @@ elif menu_selection == "💬 Chatbot":
             chat_data["title"] = user_text[:30] + "..." if len(user_text) > 30 else user_text
             st.session_state.chat_histories[chat_id] = chat_data
 
-        # AI is typing...
-        with st.spinner("AI is thinking..."):
-            try:
-                model = genai.GenerativeModel("gemini-pro")
-                response = model.generate_content(user_text.strip())
-                ai_response = response.text if hasattr(response, "text") else "I'm sorry, an issue occurred."
-            except Exception:
-                ai_response = "I'm sorry, an error occurred. Please try again."
+        # Check if the message matches common medical questions
+        user_text_lower = user_text.lower()
+        response = None
+
+        for key, value in medical_responses.items():
+            if key in user_text_lower:
+                response = value
+                break
+
+        if response:
+            ai_response = response
+        else:
+            # AI is typing...
+            with st.spinner("AI is thinking..."):
+                try:
+                    model = genai.GenerativeModel("gemini-pro")
+                    response = model.generate_content(user_text.strip())
+                    ai_response = response.text if hasattr(response, "text") else "I'm sorry, an issue occurred."
+                except Exception:
+                    ai_response = "I'm sorry, an error occurred. Please try again."
 
         # Store AI response
         chat_messages.append({"role": "assistant", "content": ai_response})
