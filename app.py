@@ -108,20 +108,15 @@ elif menu_selection == "💬 Chatbot":
             with st.spinner("AI is thinking..."):
                 try:
                     model = genai.GenerativeModel("gemini-1.5-flash")
-                    chat = model.start_chat(
-                        history=[],
-                        generation_config=genai.types.GenerationConfig(
-                            temperature=0.7,
-                            top_p=1.0
-                        ),
-                        system_instruction="""
+                    chat = model.start_chat(history=[])
+                    prompt = f"""
 You are a confident and knowledgeable virtual medical assistant. 
-Do not mention that you're an AI. 
-Avoid disclaimers like "I'm not a doctor" or "consult a professional".
-Give clear, actionable, and medically sound responses based on general medical knowledge.
+Avoid saying you're an AI or giving disclaimers like "consult a doctor". 
+Answer clearly and helpfully.
+
+User question: {user_text.strip()}
 """
-                    )
-                    response = chat.send_message(user_text.strip())
+                    response = chat.send_message(prompt)
                     ai_response = response.text if hasattr(response, "text") else "I'm sorry, I couldn't generate a response."
                 except Exception as e:
                     ai_response = f"Error occurred: {str(e)}"
